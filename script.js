@@ -77,7 +77,7 @@ addBtn.addEventListener('click', () => {
         thoughtInput.value = '';
         
         // Show success feedback
-        addBtn.textContent = 'Added!';
+        addBtn.textContent = 'Saved';
         addBtn.style.backgroundColor = '#27ae60';
         
         setTimeout(() => {
