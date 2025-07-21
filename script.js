@@ -113,6 +113,11 @@ const snippetElement = document.getElementById('snippet');
 const refreshBtn = document.getElementById('refreshBtn');
 const thoughtInput = document.getElementById('thoughtInput');
 const addBtn = document.getElementById('addBtn');
+const manageBtn = document.getElementById('manageBtn');
+const manageModal = document.getElementById('manageModal');
+const closeBtn = document.querySelector('.close-btn');
+const thoughtsList = document.getElementById('thoughtsList');
+const thoughtCount = document.getElementById('thoughtCount');
 
 function getRandomSnippet() {
     const allSnippets = getAllSnippets();
@@ -171,5 +176,66 @@ addBtn.addEventListener('click', async () => {
 thoughtInput.addEventListener('keydown', (e) => {
     if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
         addBtn.click();
+    }
+});
+
+// Manage Thoughts functionality
+function renderThoughtsList() {
+    const customThoughts = loadCustomThoughts();
+    thoughtCount.textContent = customThoughts.length;
+    
+    if (customThoughts.length === 0) {
+        thoughtsList.innerHTML = '<div class="empty-thoughts">No custom thoughts yet.<br>Add some thoughts to see them here!</div>';
+        return;
+    }
+    
+    thoughtsList.innerHTML = customThoughts.map((thought, index) => `
+        <div class="thought-item">
+            <div class="thought-text">${thought}</div>
+            <button class="delete-thought-btn" data-index="${index}">Delete</button>
+        </div>
+    `).join('');
+    
+    // Add delete event listeners
+    document.querySelectorAll('.delete-thought-btn').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+            const index = parseInt(e.target.dataset.index);
+            await deleteThought(index);
+        });
+    });
+}
+
+// Delete a specific thought
+async function deleteThought(index) {
+    const customThoughts = loadCustomThoughts();
+    
+    if (index >= 0 && index < customThoughts.length) {
+        customThoughts.splice(index, 1);
+        await saveCustomThoughts(customThoughts);
+        renderThoughtsList(); // Refresh the list
+    }
+}
+
+// Modal event listeners
+manageBtn.addEventListener('click', () => {
+    renderThoughtsList();
+    manageModal.classList.add('show');
+});
+
+closeBtn.addEventListener('click', () => {
+    manageModal.classList.remove('show');
+});
+
+// Close modal when clicking outside
+manageModal.addEventListener('click', (e) => {
+    if (e.target === manageModal) {
+        manageModal.classList.remove('show');
+    }
+});
+
+// Close modal with Escape key
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && manageModal.classList.contains('show')) {
+        manageModal.classList.remove('show');
     }
 });
