@@ -27,20 +27,35 @@ let gistStorage = null;
 let useCloudSync = false;
 let syncStatus = 'local';
 
+// Check if we're in read-only mode
+const urlParams = new URLSearchParams(window.location.search);
+const isReadOnlyMode = urlParams.has('readonly') || urlParams.get('mode') === 'share';
+
 // Initialize storage system
 async function initStorage() {
     const statusEl = document.getElementById('syncStatus');
     
+    // Check for config file or localStorage token
+    let token = null;
+    let enableSync = false;
+    
     if (window.RUMINATIONS_CONFIG && 
         window.RUMINATIONS_CONFIG.enableCloudSync && 
         window.RUMINATIONS_CONFIG.githubToken) {
+        token = window.RUMINATIONS_CONFIG.githubToken;
+        enableSync = true;
+    } else {
+        // Check localStorage for token
+        token = localStorage.getItem('github_token');
+        enableSync = localStorage.getItem('enable_cloud_sync') === 'true';
+    }
+    
+    if (enableSync && token) {
         
         try {
             gistStorage = new GistStorage();
-            await gistStorage.init(
-                window.RUMINATIONS_CONFIG.githubToken,
-                window.RUMINATIONS_CONFIG.gistId
-            );
+            const gistId = window.RUMINATIONS_CONFIG?.gistId || localStorage.getItem('gist_id') || '';
+            await gistStorage.init(token, gistId);
             useCloudSync = true;
             syncStatus = 'cloud';
             statusEl.innerHTML = '☁️ Cloud sync active';
@@ -58,7 +73,13 @@ async function initStorage() {
             }, 3000);
         }
     } else {
-        statusEl.innerHTML = '💾 Local storage only';
+        // Show appropriate message based on mode
+        if (isReadOnlyMode) {
+            statusEl.innerHTML = '👁️ Read-only mode';
+            statusEl.style.opacity = '0.7';
+        } else {
+            statusEl.innerHTML = '💾 Local storage only <span class="setup-link" onclick="showCloudSetup()">• Setup Cloud Sync</span>';
+        }
     }
 }
 
@@ -135,49 +156,72 @@ function displaySnippet() {
 
 snippetElement.style.transition = 'opacity 0.3s ease-in-out';
 
+// Apply read-only mode styling
+function applyReadOnlyMode() {
+    if (isReadOnlyMode) {
+        // Hide the entire add thought section
+        const addSection = document.querySelector('.add-thought-section');
+        if (addSection) {
+            addSection.style.display = 'none';
+        }
+        
+        // Update page title to indicate read-only
+        document.title = 'Ruminations - Daily Inspiration';
+        
+        // Add read-only indicator to header
+        const header = document.querySelector('h1');
+        if (header) {
+            header.innerHTML = 'Ruminations <span style="font-size: 0.5em; color: #95a5a6; font-weight: normal;">— Daily Inspiration</span>';
+        }
+    }
+}
+
 // Initialize storage and display first snippet
 initStorage().then(() => {
     displaySnippet();
+    applyReadOnlyMode();
 });
 
 refreshBtn.addEventListener('click', displaySnippet);
 
-// Add new thought functionality
-addBtn.addEventListener('click', async () => {
-    const newThought = thoughtInput.value.trim();
-    
-    if (newThought) {
-        const customThoughts = loadCustomThoughts();
-        customThoughts.push(newThought);
-        await saveCustomThoughts(customThoughts);
+// Add new thought functionality (only in edit mode)
+if (!isReadOnlyMode) {
+    addBtn.addEventListener('click', async () => {
+        const newThought = thoughtInput.value.trim();
         
-        // Clear the input
-        thoughtInput.value = '';
-        
-        // Show success feedback
-        addBtn.textContent = 'Saved';
-        addBtn.style.backgroundColor = '#27ae60';
-        
-        setTimeout(() => {
-            addBtn.textContent = 'Add Thought';
-            addBtn.style.backgroundColor = '';
-        }, 2000);
-        
-        // Display the new thought
-        snippetElement.style.opacity = '0';
-        setTimeout(() => {
-            snippetElement.textContent = newThought;
-            snippetElement.style.opacity = '1';
-        }, 300);
-    }
-});
+        if (newThought) {
+            const customThoughts = loadCustomThoughts();
+            customThoughts.push(newThought);
+            await saveCustomThoughts(customThoughts);
+            
+            // Clear the input
+            thoughtInput.value = '';
+            
+            // Show success feedback
+            addBtn.textContent = 'Saved';
+            addBtn.style.backgroundColor = '#27ae60';
+            
+            setTimeout(() => {
+                addBtn.textContent = 'Add Thought';
+                addBtn.style.backgroundColor = '';
+            }, 2000);
+            
+            // Display the new thought
+            snippetElement.style.opacity = '0';
+            setTimeout(() => {
+                snippetElement.textContent = newThought;
+                snippetElement.style.opacity = '1';
+            }, 300);
+        }
+    });
 
-// Allow adding thought with Enter key (Ctrl/Cmd + Enter)
-thoughtInput.addEventListener('keydown', (e) => {
-    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
-        addBtn.click();
-    }
-});
+    // Allow adding thought with Enter key (Ctrl/Cmd + Enter)
+    thoughtInput.addEventListener('keydown', (e) => {
+        if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+            addBtn.click();
+        }
+    });
+}
 
 // Manage Thoughts functionality
 function renderThoughtsList() {
@@ -216,26 +260,56 @@ async function deleteThought(index) {
     }
 }
 
-// Modal event listeners
-manageBtn.addEventListener('click', () => {
-    renderThoughtsList();
-    manageModal.classList.add('show');
-});
+// Modal event listeners (only in edit mode)
+if (!isReadOnlyMode) {
+    manageBtn.addEventListener('click', () => {
+        renderThoughtsList();
+        manageModal.classList.add('show');
+    });
 
-closeBtn.addEventListener('click', () => {
-    manageModal.classList.remove('show');
-});
-
-// Close modal when clicking outside
-manageModal.addEventListener('click', (e) => {
-    if (e.target === manageModal) {
+    closeBtn.addEventListener('click', () => {
         manageModal.classList.remove('show');
-    }
-});
+    });
 
-// Close modal with Escape key
-document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && manageModal.classList.contains('show')) {
-        manageModal.classList.remove('show');
+    // Close modal when clicking outside
+    manageModal.addEventListener('click', (e) => {
+        if (e.target === manageModal) {
+            manageModal.classList.remove('show');
+        }
+    });
+
+    // Close modal with Escape key
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && manageModal.classList.contains('show')) {
+            manageModal.classList.remove('show');
+        }
+    });
+}
+
+// Cloud setup functionality (only in edit mode)
+function showCloudSetup() {
+    if (isReadOnlyMode) {
+        alert('Cloud setup is not available in read-only mode.');
+        return;
     }
-});
+    
+    const token = prompt(`To enable cloud sync across devices:
+
+1. Go to: https://github.com/settings/tokens/new
+2. Create a token with 'gist' scope only
+3. Copy and paste your token below:
+
+Your token will be stored securely in your browser.`);
+    
+    if (token && token.trim()) {
+        localStorage.setItem('github_token', token.trim());
+        localStorage.setItem('enable_cloud_sync', 'true');
+        
+        // Reinitialize storage
+        initStorage().then(() => {
+            alert('Cloud sync enabled! Your thoughts will now sync across devices.');
+        }).catch(() => {
+            alert('Failed to connect. Please check your token and try again.');
+        });
+    }
+}
