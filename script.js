@@ -22,15 +22,85 @@ const defaultSnippets = [
     "Everyone's messed up inside: don't compare your messy interior to others' curated outsides."
 ];
 
+// Initialize cloud storage
+let gistStorage = null;
+let useCloudSync = false;
+let syncStatus = 'local';
+
+// Initialize storage system
+async function initStorage() {
+    const statusEl = document.getElementById('syncStatus');
+    
+    if (window.RUMINATIONS_CONFIG && 
+        window.RUMINATIONS_CONFIG.enableCloudSync && 
+        window.RUMINATIONS_CONFIG.githubToken) {
+        
+        try {
+            gistStorage = new GistStorage();
+            await gistStorage.init(
+                window.RUMINATIONS_CONFIG.githubToken,
+                window.RUMINATIONS_CONFIG.gistId
+            );
+            useCloudSync = true;
+            syncStatus = 'cloud';
+            statusEl.innerHTML = '☁️ Cloud sync active';
+            statusEl.classList.add('cloud');
+            
+            // Try to sync from cloud on startup
+            await syncFromCloud();
+        } catch (error) {
+            console.error('Failed to initialize cloud sync:', error);
+            statusEl.innerHTML = '⚠️ Cloud sync failed, using local storage';
+            statusEl.classList.add('error');
+            setTimeout(() => {
+                statusEl.innerHTML = '💾 Local storage only';
+                statusEl.classList.remove('error');
+            }, 3000);
+        }
+    } else {
+        statusEl.innerHTML = '💾 Local storage only';
+    }
+}
+
+// Sync from cloud to local
+async function syncFromCloud() {
+    if (!useCloudSync || !gistStorage) return;
+    
+    const cloudThoughts = await gistStorage.loadThoughts();
+    if (cloudThoughts !== null) {
+        localStorage.setItem('customThoughts', JSON.stringify(cloudThoughts));
+    }
+}
+
 // Load custom thoughts from localStorage
 function loadCustomThoughts() {
     const saved = localStorage.getItem('customThoughts');
     return saved ? JSON.parse(saved) : [];
 }
 
-// Save custom thoughts to localStorage
-function saveCustomThoughts(thoughts) {
+// Save custom thoughts with cloud sync
+async function saveCustomThoughts(thoughts) {
+    // Always save to localStorage first
     localStorage.setItem('customThoughts', JSON.stringify(thoughts));
+    
+    // Then try cloud sync if enabled
+    if (useCloudSync && gistStorage) {
+        const statusEl = document.getElementById('syncStatus');
+        statusEl.innerHTML = '🔄 Syncing...';
+        
+        const success = await gistStorage.saveThoughts(thoughts);
+        if (success) {
+            statusEl.innerHTML = '☁️ Synced';
+            setTimeout(() => {
+                statusEl.innerHTML = '☁️ Cloud sync active';
+            }, 2000);
+        } else {
+            statusEl.innerHTML = '⚠️ Sync failed';
+            setTimeout(() => {
+                statusEl.innerHTML = '☁️ Cloud sync active';
+            }, 3000);
+        }
+    }
 }
 
 // Get all snippets (default + custom)
@@ -60,18 +130,21 @@ function displaySnippet() {
 
 snippetElement.style.transition = 'opacity 0.3s ease-in-out';
 
-displaySnippet();
+// Initialize storage and display first snippet
+initStorage().then(() => {
+    displaySnippet();
+});
 
 refreshBtn.addEventListener('click', displaySnippet);
 
 // Add new thought functionality
-addBtn.addEventListener('click', () => {
+addBtn.addEventListener('click', async () => {
     const newThought = thoughtInput.value.trim();
     
     if (newThought) {
         const customThoughts = loadCustomThoughts();
         customThoughts.push(newThought);
-        saveCustomThoughts(customThoughts);
+        await saveCustomThoughts(customThoughts);
         
         // Clear the input
         thoughtInput.value = '';

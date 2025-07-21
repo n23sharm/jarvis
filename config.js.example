@@ -1,0 +1,18 @@
+// Configuration for GitHub Gist Storage
+// 
+// To use cloud sync:
+// 1. Copy this file to config.js
+// 2. Follow instructions in SETUP_CLOUD_SYNC.md
+// 3. Add your GitHub token below
+
+window.RUMINATIONS_CONFIG = {
+    // Replace with your GitHub personal access token
+    githubToken: '',
+    
+    // Optional: If you already have a gist, put its ID here
+    // Otherwise, leave empty and one will be created
+    gistId: '',
+    
+    // Set to true to enable cloud sync
+    enableCloudSync: false
+};
