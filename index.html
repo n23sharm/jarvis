@@ -3,16 +3,22 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Meditations for Mortals - Daily Snippet</title>
+    <title>Ruminations - Daily Thoughts</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <div class="container">
-        <h1>Meditations for Mortals</h1>
+        <h1>Ruminations</h1>
         <div class="snippet-card">
             <p id="snippet" class="snippet-text"></p>
         </div>
-        <button id="refreshBtn" class="refresh-btn">New Snippet</button>
+        <button id="refreshBtn" class="refresh-btn">New Thought</button>
+        
+        <div class="add-thought-section">
+            <h2>Add Your Rumination</h2>
+            <textarea id="thoughtInput" placeholder="Enter your thought, reflection, or favorite excerpt here..." rows="4"></textarea>
+            <button id="addBtn" class="add-btn">Add Thought</button>
+        </div>
     </div>
     <script src="script.js"></script>
 </body>

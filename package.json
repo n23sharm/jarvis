@@ -1,0 +1,24 @@
+{
+  "name": "jarvis",
+  "version": "1.0.0",
+  "description": "A simple web app that displays inspirational snippets from \"Meditations for Mortals\" with a refresh button to get new quotes.",
+  "main": "run_app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/n23sharm/jarvis.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/n23sharm/jarvis/issues"
+  },
+  "homepage": "https://github.com/n23sharm/jarvis#readme",
+  "dependencies": {
+    "playwright": "^1.54.1"
+  }
+}
