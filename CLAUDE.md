@@ -9,6 +9,7 @@ Ruminations is a personal thought collection and daily inspiration app. Users ca
 - **Cloud Sync**: GitHub Gist integration for cross-device synchronization
 - **Thought Management**: Modal interface to view and delete custom thoughts
 - **Offline Support**: localStorage fallback when cloud sync unavailable
+- **Read-Only Sharing**: Share your wisdom collection via URL parameters for public viewing
 
 ## Architecture & Files
 
@@ -47,6 +48,7 @@ Ruminations is a personal thought collection and daily inspiration app. Users ca
 - `loadCustomThoughts()` - Load from localStorage
 - `renderThoughtsList()` - Display thoughts in manage modal
 - `deleteThought(index)` - Remove specific thought with sync
+- `checkReadOnlyMode()` - Detect URL parameters for read-only viewing
 
 ## Cloud Sync Implementation
 
@@ -62,13 +64,25 @@ Ruminations is a personal thought collection and daily inspiration app. Users ca
 - `💾 Local storage only` - No cloud config
 - `⚠️ Sync failed` - Error state
 
+## Sharing Mode
+
+### Read-Only Access
+- **URL Parameters**: `?readonly=true` or `?mode=share` enables read-only mode
+- **Interface Changes**: Hides add/manage buttons, shows "Daily Inspiration" title
+- **Use Cases**: Share your wisdom collection publicly without edit access
+- **Status Indicator**: Shows "Read-only mode" instead of sync status
+
+### Operation Modes
+1. **Personal Mode**: Full editing capabilities with cloud sync (default)
+2. **Shared Mode**: Clean read-only experience for public viewing
+
 ## UI/UX Design Philosophy
 
 ### Layout Priorities
 1. **Thought display**: Large, centered, prominent (main focus)
 2. **Inspiration button**: Clear call-to-action for new thoughts
-3. **Add section**: Subtle, appears on hover (secondary)
-4. **Management**: Hidden in modal (occasional use)
+3. **Add section**: Subtle, appears on hover (secondary in personal mode, hidden in shared mode)
+4. **Management**: Hidden in modal (occasional use, personal mode only)
 
 ### Visual Hierarchy
 - Title: Small, muted (RUMINATIONS)
@@ -118,6 +132,8 @@ node run_app.js  # Launches in browser with Playwright
 - Import from other sources
 - Offline sync queue when reconnecting
 - Multiple theme options
+- Custom sharing URLs with specific thought collections
+- Analytics for shared links
 
 ## Deployment Notes
 - Static files only (can deploy anywhere)
@@ -130,5 +146,7 @@ node run_app.js  # Launches in browser with Playwright
 - Test cloud sync with actual GitHub account
 - Verify offline/online state transitions
 - Cross-device sync validation with same token
+- Test read-only mode with various URL parameters
+- Verify UI elements properly hide in shared mode
 
 This architecture prioritizes simplicity, data ownership (user's GitHub), and progressive enhancement (works without cloud sync).
